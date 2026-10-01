@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>RAO Brothers • Workforce Attendance</title>
+<div id="attModal" class="modal hidden" onclick="if(event.target===this)closeAttModal()"><div class="modalbox"><div class="actions" style="justify-content:space-between"><h2 style="margin:0">Attendance Details</h2><button class="light" onclick="closeAttModal()">✕ Close</button></div><div id="attDetail"></div></div></div>
+<script>
+window.addEventListener('error',function(e){
+  var m=document.getElementById('loginMsg');
+  if(m){m.textContent='System error: '+(e.message||'JavaScript failed to load')+' | '+(e.filename||'');m.classList.remove('hidden');}
+});
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.onerror=null;var s=document.createElement('script');s.src='https://unpkg.com/@supabase/supabase-js@2';document.head.appendChild(s);"></script>
+<style>
+:root{--g:#123d2b;--g2:#17613f;--bg:#f3f6f4;--card:#fff;--text:#17231c;--muted:#718078;--line:#e3eae6;--gold:#c69b45}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Arial,sans-serif}
+button,input,select{font:inherit}button{border:0;cursor:pointer;border-radius:12px;padding:12px 15px;font-weight:700}
+.top{background:linear-gradient(135deg,var(--g),#0c2d20);color:#fff;padding:18px 16px;position:sticky;top:0;z-index:20}
+.topin{max-width:1100px;margin:auto;display:flex;align-items:center;justify-content:space-between}.brand{font-size:21px;font-weight:900}.sub{font-size:12px;opacity:.72;margin-top:3px}
+.wrap{max-width:1100px;margin:auto;padding:16px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:17px;margin-bottom:14px;box-shadow:0 5px 24px #163b2910}
+h1,h2,h3{margin:0 0 7px}.muted{font-size:13px;color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.stat{background:#edf5f0;border-radius:15px;padding:16px}.stat b{font-size:28px;display:block;margin-top:5px}
+.primary{background:var(--g2);color:white}.light{background:#e8f0eb;color:#174b35}.danger{background:#fbe9e9;color:#a33}.gold{background:#f6edda;color:#79591c}
+input,select{width:100%;padding:13px;border:1px solid #d7e0db;border-radius:11px;background:#fff;outline:none;margin:5px 0 10px}
+label{font-size:12px;font-weight:700;color:#56645c}.actions{display:flex;gap:8px;flex-wrap:wrap}
+.nav{display:flex;gap:8px;overflow:auto;margin-bottom:14px}.nav button{white-space:nowrap}
+.badge{display:inline-block;padding:5px 9px;border-radius:99px;background:#e8f0eb;font-size:11px;font-weight:800}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 7px;border-bottom:1px solid var(--line);font-size:13px}
+.scroll{overflow:auto}.hidden{display:none!important}.camera{width:100%;max-height:330px;object-fit:cover;border-radius:15px;background:#111;margin:8px 0}.notice{padding:12px;border-radius:12px;background:#fff6db;font-size:13px;margin:10px 0}.success{background:#e8f7ed;color:#145a35}.dangerText{background:#fdecec;color:#8e2020}.small{font-size:11px}.workerHero{background:linear-gradient(135deg,#123d2b,#1d6946);color:#fff}.workerHero .muted{color:#d7e8df}.step{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid #ffffff20}.step:last-child{border-bottom:0}.step b{width:28px;height:28px;border-radius:50%;background:#fff;color:#123d2b;display:grid;place-items:center}.linkbox{background:#f5f8f6;border:1px dashed #b9c8bf;border-radius:12px;padding:9px;word-break:break-all;font-size:11px}.thumb{width:90px;height:70px;object-fit:cover;border-radius:9px;border:1px solid var(--line)}
+.login{max-width:450px;margin:55px auto}.logo{font-size:29px;font-weight:900;color:var(--g);margin-bottom:3px}
+@media(max-width:800px){.grid{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr}}
+@media(max-width:500px){.wrap{padding:11px}.grid{grid-template-columns:1fr 1fr}.card{padding:14px}.top{padding:15px}}
+
+.metricNote{font-size:11px;color:var(--muted);margin-top:4px}.reportTable td,.reportTable th{white-space:nowrap}.lateBadge{background:#fff1cf;color:#79591c}.onTimeBadge{background:#e8f7ed;color:#145a35}.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:18px;z-index:50}.modalbox{background:#fff;border-radius:20px;max-width:720px;width:100%;max-height:90vh;overflow:auto;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.25)}.modalbox img{width:100%;max-height:420px;object-fit:contain;border-radius:14px;background:#f2f5f3}.hidden{display:none!important}.mini{font-size:12px;color:#64756d}.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.toolbar input,.toolbar select{max-width:220px}.danger{background:#b42318!important;color:#fff!important}.outline{background:#fff!important;border:1px solid #cfd9d3!important;color:#245b3d!important}
+</style>
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0f172a"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="RAO Attendance">
+</head>
+<body>
+<header class="top"><div class="topin"><div><div class="brand">RAO Brothers</div><div class="sub">Team Attendance & Salary</div></div><button id="logoutTop" class="light hidden" onclick="logout()">Logout</button></div></header>
+
+<main class="wrap">
+<section id="login" class="card login">
+<div class="logo">RAO Brothers</div><h2>Attendance System</h2><div class="muted">Admin / Worker secure login</div>
+<div style="height:10px"></div>
+<label>Email</label><input id="email" type="email" placeholder="Email">
+<label>Password</label><input id="pass" type="password" placeholder="Password">
+<button id="loginBtn" class="primary" style="width:100%" onclick="login()">Login</button>
+<div id="loginMsg" class="notice hidden"></div><div id="diag" class="muted" style="margin-top:10px;font-size:12px;white-space:pre-wrap"></div>
+</section>
+
+<section id="app" class="hidden">
+<div id="adminNav" class="nav hidden">
+<button class="primary" onclick="tab('dashboard')">📊 Dashboard</button>
+<button class="light" onclick="tab('attendance')">📋 Attendance</button>
+<button class="light" onclick="tab('workers')">👷 Workers</button>
+<button class="light" onclick="tab('salary')">💰 Salary</button>
+<button class="light" onclick="tab('admins')">👨‍💼 Admins</button>
+</div>
+<div id="workerNav" class="nav hidden">
+<button class="primary" onclick="tab('workerHome')">✅ Attendance</button>
+<button class="light" onclick="tab('workerHistory')">📅 My History</button>
+</div>
+
+<section id="dashboard" class="page">
+<div class="card"><h2>Admin Dashboard</h2><div class="muted" id="today"></div></div>
+<div class="grid">
+<div class="stat">Present<b id="sPresent">0</b><div class="metricNote">Approved today</div></div>
+<div class="stat">Pending<b id="sPending">0</b><div class="metricNote">Awaiting approval</div></div>
+<div class="stat">Late<b id="sLate">0</b><div class="metricNote">Based on duty time</div></div>
+<div class="stat">Absent<b id="sAbsent">0</b><div class="metricNote">No attendance today</div></div>
+<div class="stat">Workers<b id="sWorkers">0</b><div class="metricNote">Active workers</div></div>
+</div>
+<div class="card"><h3>Pending Verification</h3><div class="scroll"><table><thead><tr><th>Worker</th><th>Time</th><th>Status</th><th>Action</th></tr></thead><tbody id="pendingRows"></tbody></table></div></div>
+</section>
+
+<section id="attendance" class="page hidden">
+<div class="card"><h2>📋 Attendance Management</h2>
+<div class="toolbar"><button class="light" onclick="loadAdmin()">↻ Refresh</button><input id="attSearch" placeholder="Search worker…" oninput="renderAttendance()"><select id="attStatus" onchange="renderAttendance()"><option value="all">All status</option><option value="pending">Pending</option><option value="present">Present</option><option value="rejected">Rejected</option><option value="leave">Leave</option><option value="absent">Absent</option></select><button class="outline" onclick="exportAttendanceCSV()">⬇ Export CSV</button></div>
+<div class="two">
+<div><label>Duty Start Time</label><input id="dutyStart" type="time" value="09:00"></div>
+<div><label>Late Grace (minutes)</label><input id="lateGrace" type="number" min="0" max="180" value="15"></div>
+</div>
+<div class="two">
+<div><label>Standard Shift Hours</label><input id="shiftHours" type="number" min="1" max="24" step="0.25" value="8"></div>
+<div class="actions" style="align-items:end"><button class="light" onclick="saveTimingSettings();renderAttendance()">💾 Save Timing Rules</button></div>
+</div>
+<div class="notice">Late is only a timing label — it does <b>not</b> make the worker absent. Every Time In/Time Out stays in the record. Extra hours are calculated from actual Time In → Time Out above the standard shift.</div>
+<div id="attMsgAdmin" class="notice hidden"></div>
+<div class="scroll"><table><thead><tr><th>Worker</th><th>Date</th><th>Time In</th><th>Time Out</th><th>Timing</th><th>Total Hours</th><th>Extra Hours</th><th>Status</th><th>Verification</th><th>Action</th></tr></thead><tbody id="attendanceRows"></tbody></table></div>
+<div class="notice">Tip: Use View to inspect Time In/Out selfies and recorded server times before approving.</div></div>
+<div class="card"><h3>📊 Monthly Attendance Report</h3><div class="two"><div><label>Month</label><input id="reportMonth" type="month"></div><div><label>Work Schedule</label><select id="reportSchedule"><option value="mon-sat">Monday – Saturday</option><option value="mon-fri">Monday – Friday</option><option value="all">Every day</option></select></div></div><div class="actions"><button class="primary" onclick="loadMonthlyReport()">Generate Report</button><button class="outline" onclick="exportMonthlyReportCSV()">⬇ Export Monthly CSV</button></div><div id="reportMsg" class="notice hidden"></div><div class="scroll"><table class="reportTable"><thead><tr><th>Worker</th><th>Present</th><th>Late</th><th>Absent</th><th>Leave</th><th>Total Hours</th><th>Extra Hours</th></tr></thead><tbody id="monthlyRows"></tbody></table></div></div>
+</section>
+
+<section id="workers" class="page hidden">
+<div class="card"><h2>Worker Access</h2><div class="muted">Each worker gets a private attendance link. No Gmail or password is required.</div><div class="notice success">Send only the worker's own link. Keep links private.</div></div>
+<div class="two">
+<div class="card"><h2>Add Worker</h2><label>Worker ID</label><input id="newId" placeholder="W008"><label>Name</label><input id="newName"><label>Daily Wage (RM)</label><input id="newWage" type="number"><label>Phone</label><input id="newPhone"><label>Site</label><input id="newSite"><button class="primary" onclick="addWorker()">Add Worker</button><div id="workerMsg" class="notice hidden"></div></div>
+<div class="card"><h2>Worker List</h2><div class="scroll"><table><thead><tr><th>ID</th><th>Name</th><th>Wage</th><th>Site</th><th>Access</th></tr></thead><tbody id="workerRows"></tbody></table></div></div>
+</div></section>
+
+<section id="salary" class="page hidden">
+<div class="card"><h2>💰 Salary & Payments</h2><div class="muted">Calculate approved attendance for any period, record payments and track outstanding balance.</div>
+<div class="two" style="margin-top:12px"><div><label>Period Start</label><input id="salaryStart" type="date"></div><div><label>Period End</label><input id="salaryEnd" type="date"></div></div>
+<div class="actions"><button class="primary" onclick="loadSalary()">📊 Calculate Salary</button><button class="light" onclick="setSalaryMonth();loadSalary()">Current Month</button></div>
+<div id="salaryMsg" class="notice hidden"></div></div>
+<div class="card"><div class="scroll"><table><thead><tr><th>Worker</th><th>Wage</th><th>Present</th><th>Late</th><th>Absent/Unpaid</th><th>Total Hours</th><th>Extra Hours</th><th>Gross</th><th>Paid</th><th>Balance</th><th>Payment</th></tr></thead><tbody id="salaryRows"></tbody></table></div></div>
+</section>
+
+<section id="admins" class="page hidden"><div class="card"><h2>Admin Management</h2><div class="muted">Maximum 2 Admin accounts can be maintained here.</div><div class="notice">Admin 2 can be added later from this section. Passwords are never stored in this app.</div><div id="adminInfo"></div></div></section>
+
+<section id="workerHome" class="page hidden">
+<div class="card workerHero"><h2>Today's Attendance</h2><div class="muted" id="workerLabel"></div><div class="step"><b>1</b><span id="workStep1">Time In: Take a fresh selfie</span></div><div class="step"><b>2</b><span id="workStep2">Submit with server time</span></div><div class="step"><b>3</b><span id="workStep3">Submit — Admin verifies it</span></div>
+<div class="notice"><b id="workerLinkName">Worker Attendance</b><br><span id="workerLinkId">Personal worker link</span><br><span class="small">Fresh selfie + server time are recorded. No GPS is required.</span></div>
+<video id="cam" class="camera" autoplay playsinline></video><canvas id="snap" class="hidden"></canvas><img id="selfie" class="camera hidden" alt="Captured selfie">
+<div class="actions"><button class="light" onclick="startCam()">📸 Open Camera</button><button class="light" onclick="captureSelfie()">📷 Capture Selfie</button></div>
+
+<button id="submitBtn" class="primary" style="width:100%" onclick="sendAttendance()">🟢 Time In / Start Work</button>
+<div id="attMsg" class="notice hidden"></div></div>
+</section>
+
+<section id="workerHistory" class="page hidden"><div class="card"><h2>My Attendance History</h2><div class="scroll"><table><thead><tr><th>Date</th><th>Time In</th><th>Time Out</th><th>Hours</th><th>Status</th></tr></thead><tbody id="myRows"></tbody></table></div></div></section>
+</section>
+</main>
+
+<div id="attModal" class="modal hidden" onclick="if(event.target===this)closeAttModal()"><div class="modalbox"><div class="actions" style="justify-content:space-between"><h2 style="margin:0">Attendance Details</h2><button class="light" onclick="closeAttModal()">✕ Close</button></div><div id="attDetail"></div></div></div>
+<script>
+const SUPABASE_URL="https://vcuxocnzythpmbktxxdd.supabase.co";
+const KEY="sb_publishable_g4c7ExgBODakAWMKp-_PDA_LLNfNsZB";
+let db=null;
+function ensureDb(){
+ if(db) return true;
+ if(window.supabase?.createClient){ db=window.supabase.createClient(SUPABASE_URL,KEY); return true; }
+ notice('loginMsg','Secure login library did not load. Please refresh once.');
+ diag('Supabase login library is unavailable. This is a browser/network loading issue, not your password.');
+ return false;
+}
+let role=null, workerId=null, stream=null, workerToken=null, selfieData=null, adminAttendance=[], workerMode="in", workerToday=null;
+function captureSelfie(){if(!stream)return notice("attMsg","Open camera first.");const v=$("cam"),c=$("snap");const maxW=640,maxH=480;let w=v.videoWidth||640,h=v.videoHeight||480;const scale=Math.min(maxW/w,maxH/h,1);w=Math.round(w*scale);h=Math.round(h*scale);c.width=w;c.height=h;c.getContext("2d").drawImage(v,0,0,w,h);selfieData=c.toDataURL("image/jpeg",0.62);$("selfie").src=selfieData;$("selfie").classList.remove("hidden");notice("attMsg","Fresh selfie captured. Now submit.")}
+async function loadWorkerLink(){
+ const q=new URLSearchParams(location.search); const token=q.get("token");
+ if(!token)return false; workerToken=token; role="worker";
+ if(!ensureDb())return true;
+ const {data:w,error}=await db.rpc("get_worker_by_token",{p_token:token});
+ if(error||!w){document.getElementById("login").innerHTML='<div class="logo">RAO Brothers</div><h2>Worker Link Invalid</h2><div class="notice dangerText">This link is invalid, inactive or expired. Ask Admin for a new link.</div>';return true;}
+ workerId=w.worker_id;
+ $("login").classList.add("hidden");$("app").classList.remove("hidden");$("logoutTop").classList.remove("hidden");$("workerNav").classList.remove("hidden");
+ $("workerLabel").textContent="Welcome, "+w.name+" • "+(w.site||"Site not assigned"); $("workerLinkId").textContent="Worker ID: "+w.worker_id;$("workerLinkName").textContent=w.name;tab("workerHome");await refreshWorkerToday(); return true;
+}
+function workerLink(token,wid){return location.origin+location.pathname+"?worker="+encodeURIComponent(wid)+"&token="+encodeURIComponent(token)}
+async function copyWorkerLink(id,name,token){const link=workerLink(token,id);try{await navigator.clipboard.writeText(link);notice("workerMsg","Private link copied for "+name);}catch(e){prompt("Copy this worker link:",link)}}
+function shareWorkerWhatsApp(id,name,token){const link=workerLink(token,id);location.href='https://wa.me/?text='+encodeURIComponent('RAO Brothers Attendance\n\n'+name+', your personal attendance link is:\n'+link+'\n\nOpen this link each workday. No Gmail or password is required.');}
+const $=id=>document.getElementById(id);
+function notice(id,t){$(id).textContent=t;$(id).classList.remove("hidden")}
+function tab(id){document.querySelectorAll(".page").forEach(x=>x.classList.add("hidden"));$(id).classList.remove("hidden");if(id==="dashboard"||id==="attendance"||id==="workers")loadAdmin();if(id==="attendance"){initAttendanceSettings();setReportMonth();}if(id==="salary"){setSalaryMonth();loadSalary();}if(id==="workerHistory")loadMine()}
+function diag(t){const d=$("diag");if(d)d.textContent=t}
+async function login(){
+ if(!ensureDb())return;
+ const email=$("email").value.trim(),password=$("pass").value,btn=$("loginBtn");
+ $("loginMsg").classList.add("hidden");
+ if(!email||!password)return notice("loginMsg","Email and password are required.");
+ btn.disabled=true;btn.textContent="Logging in…";
+ diag("Connecting to secure login…");
+ try{
+   const {data,error}=await db.auth.signInWithPassword({email,password});
+   if(error){diag("Authentication failed.");return notice("loginMsg","Login failed: "+error.message+" ("+(error.status||"no status")+")");}
+   diag("Login successful. Checking admin/worker access…\nUser ID: "+(data.user?.id||"unknown"));
+   const {data:u,error:ue}=await db.auth.getUser();
+   if(ue||!u?.user)throw new Error("Auth session created, but user could not be verified: "+(ue?.message||"unknown error"));
+   await boot(u.user);
+ }catch(e){console.error(e);notice("loginMsg","System error: "+(e?.message||String(e)));diag("Login diagnostic stopped. Open browser console if needed.");}
+ finally{btn.disabled=false;btn.textContent="Login";}
+}
+async function boot(user){
+ try{
+   diag("Authenticated. Looking up role…\nUser ID: "+user.id);
+   const {data:r,error}=await db.from("user_roles").select("role,worker_id").eq("user_id",user.id).maybeSingle();
+   if(error){diag("Role lookup failed.\nCode: "+(error.code||"-")+"\nMessage: "+error.message);return notice("loginMsg","Role lookup failed: "+error.message+" ["+(error.code||"no code")+"]");}
+   if(!r){diag("No role row found for this user.\nUser ID: "+user.id);return notice("loginMsg","Login worked, but no role is assigned to this account.");}
+   role=r.role;workerId=r.worker_id;
+   diag("Access granted. Role: "+role);
+   $("login").classList.add("hidden");$("app").classList.remove("hidden");$("logoutTop").classList.remove("hidden");
+   if(role==="admin"){$("adminNav").classList.remove("hidden");tab("dashboard")}
+   else{$("workerNav").classList.remove("hidden");$("workerIdInput").value=workerId?"":"W001";$("workerLabel").textContent="Attendance will remain Pending until Admin verification.";tab("workerHome")}
+ }catch(e){console.error(e);notice("loginMsg","Access error: "+(e?.message||String(e)));diag("Boot error after authentication.");}
+}
+async function logout(){if(role==="worker"&&workerToken){location.href=location.origin+location.pathname;return;}if(db)await db.auth.signOut();location.reload()}
+function localDateKey(d=new Date()){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");return `${y}-${m}-${day}`;}
+function monthKey(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;}
+function initAttendanceSettings(){const ds=localStorage.getItem("raoDutyStart")||"09:00",gr=localStorage.getItem("raoLateGrace")||"15",sh=localStorage.getItem("raoShiftHours")||"8";if($("dutyStart"))$("dutyStart").value=ds;if($("lateGrace"))$("lateGrace").value=gr;if($("shiftHours"))$("shiftHours").value=sh;}
+function saveTimingSettings(){const ds=$("dutyStart")?.value||"09:00",gr=Math.max(0,Number($("lateGrace")?.value||15)),sh=Math.max(1,Number($("shiftHours")?.value||8));localStorage.setItem("raoDutyStart",ds);localStorage.setItem("raoLateGrace",String(gr));localStorage.setItem("raoShiftHours",String(sh));notice("attMsgAdmin",`Timing rules saved: duty starts ${ds}, grace ${gr} minutes, standard shift ${sh} hours.`);}
+function setReportMonth(){if($("reportMonth")&&!$("reportMonth").value)$("reportMonth").value=monthKey();if($("reportSchedule")&&!localStorage.getItem("raoWorkSchedule"))$("reportSchedule").value="mon-sat";else if($("reportSchedule"))$("reportSchedule").value=localStorage.getItem("raoWorkSchedule")||"mon-sat";}
+function getTiming(checkIn){
+ if(!checkIn)return "—";
+ const ds=localStorage.getItem("raoDutyStart")||$("dutyStart")?.value||"09:00", grace=Number(localStorage.getItem("raoLateGrace")||$("lateGrace")?.value||15);
+ const [h,m]=ds.split(":").map(Number),d=new Date(checkIn),duty=new Date(d);duty.setHours(h,m,0,0);
+ return d.getTime()>duty.getTime()+grace*60000?"Late":"On time";
+}
+function getRecordHours(x){if(!x?.check_in_at||!x?.check_out_at)return 0;return Math.max(0,(new Date(x.check_out_at)-new Date(x.check_in_at))/3600000);}
+function getOvertimeHours(x){const standard=Number(localStorage.getItem("raoShiftHours")||$("shiftHours")?.value||8);return Math.max(0,getRecordHours(x)-standard);}
+function isAttendanceDayRecord(x){return !!x&&x.status!=="rejected";}
+function scheduledDays(start,end,schedule="mon-sat"){
+ let n=0,d=new Date(start+"T00:00:00"),last=new Date(end+"T00:00:00");
+ while(d<=last){const wd=d.getDay();if(schedule==="all"||(schedule==="mon-fri"&&wd>=1&&wd<=5)||(schedule==="mon-sat"&&wd>=1&&wd<=6))n++;d.setDate(d.getDate()+1);}return n;
+}
+async function loadAdmin(){
+ if(role!=="admin")return;
+ initAttendanceSettings();
+ const {data:w}=await db.from("workers").select("*").eq("active",true).order("worker_id");
+ const {data:a}=await db.from("attendance").select("*,workers(worker_id,name,daily_wage,site)").order("created_at",{ascending:false}).limit(1000); adminAttendance=a||[];
+ $("today").textContent=new Date().toLocaleDateString();
+ $("sWorkers").textContent=(w||[]).length;
+ const today=localDateKey(),arr=(a||[]).filter(x=>x.attendance_date===today);
+ const ids=new Set(arr.map(x=>x.worker_id));
+ $("sPresent").textContent=arr.filter(x=>x.status==="present").length;
+ $("sPending").textContent=arr.filter(x=>x.status==="pending").length;
+ $("sLate").textContent=arr.filter(x=>x.status!=="rejected"&&getTiming(x.check_in_at)==="Late").length;
+ $("sAbsent").textContent=Math.max(0,(w||[]).filter(x=>!arr.some(r=>r.worker_id===x.id&&isAttendanceDayRecord(r))).length);
+ $("workerRows").innerHTML=(w||[]).map(x=>`<tr><td>${x.worker_id}</td><td>${x.name}</td><td>RM ${x.daily_wage}</td><td>${x.site||"-"}</td><td><button class="primary" onclick="copyWorkerLink('${x.worker_id}','${String(x.name).replace(/'/g,"\\'")}','${x.access_token}')">🔗 Copy</button> <button class="light" onclick="shareWorkerWhatsApp('${x.worker_id}','${String(x.name).replace(/'/g,"\\'")}','${x.access_token}')">📲 WhatsApp</button></td></tr>`).join("");
+ renderAttendance();
+ $("pendingRows").innerHTML=arr.filter(x=>x.status==="pending").map(x=>`<tr><td>${x.workers?.name||"-"}</td><td>${new Date(x.check_in_at).toLocaleTimeString()}</td><td><span class="badge">Pending</span></td><td><button class="primary" onclick="verify('${x.id}','present')">Approve</button></td></tr>`).join("")||`<tr><td colspan="4">No pending attendance.</td></tr>`;
+ $("salaryRows").innerHTML=(w||[]).map(x=>{const p=arr.filter(a=>a.worker_id===x.id&&a.status==="present").length;const l=arr.filter(a=>a.worker_id===x.id&&a.status==="present"&&getTiming(a.check_in_at)==="Late").length;return `<tr><td>${x.name}</td><td>RM ${x.daily_wage}</td><td>${p}</td><td>${l}</td><td>—</td><td>RM ${(p*x.daily_wage).toFixed(2)}</td><td>—</td><td>—</td><td>—</td></tr>`}).join("");
+ $("adminInfo").innerHTML="<p><b>Admin 1:</b> Rizwankhan6598@gmail.com</p><p><b>Admin 2:</b> Available to add later</p>";
+}
+function renderAttendance(){
+ const q=($("attSearch")?.value||"").toLowerCase(),st=$("attStatus")?.value||"all";
+ const rows=adminAttendance.filter(x=>(!q||(x.workers?.name||"").toLowerCase().includes(q)||(x.workers?.worker_id||"").toLowerCase().includes(q))&&(st==="all"||x.status===st));
+ $("attendanceRows").innerHTML=rows.map(x=>{
+   const timing=getTiming(x.check_in_at),timingHtml=timing==="Late"?'<span class="badge lateBadge">Late</span>':timing==="On time"?'<span class="badge onTimeBadge">On time</span>':'—';
+   const hrs=getRecordHours(x),ot=getOvertimeHours(x);
+   return `<tr><td><b>${x.workers?.name||"-"}</b><br><span class="small">${x.workers?.worker_id||""}</span></td><td>${x.attendance_date}</td><td>${x.check_in_at?new Date(x.check_in_at).toLocaleTimeString():"-"}</td><td>${x.check_out_at?new Date(x.check_out_at).toLocaleTimeString():"—"}</td><td>${timingHtml}</td><td>${hrs?hrs.toFixed(2)+" h":"—"}</td><td>${ot?ot.toFixed(2)+" h":"—"}</td><td><span class="badge">${x.status}</span></td><td>${x.verification_status||"pending"}</td><td><button class="outline" onclick="showAttDetail('${x.id}')">View</button> ${x.status==="pending"?`<button class="primary" onclick="verify('${x.id}','present')">Approve</button> <button class="danger" onclick="verify('${x.id}','rejected')">Reject</button>`:""}</td></tr>`;
+ }).join("")||`<tr><td colspan="10">No attendance records found.</td></tr>`;
+}
+function showAttDetail(id){const x=adminAttendance.find(v=>v.id===id);if(!x)return;const inPhoto=x.photo_url?`<h3>Time In Selfie</h3><img src="${x.photo_url}" alt="Time In selfie">`:`<div class="notice">No Time In selfie stored.</div>`;const outPhoto=x.checkout_photo_url?`<h3 style="margin-top:16px">Time Out Selfie</h3><img src="${x.checkout_photo_url}" alt="Time Out selfie">`:`<div class="notice" style="margin-top:12px">No Time Out selfie recorded yet.</div>`;const hours=(x.check_in_at&&x.check_out_at)?Math.max(0,(new Date(x.check_out_at)-new Date(x.check_in_at))/3600000).toFixed(2):'—';$("attDetail").innerHTML=`<p><b>Worker:</b> ${x.workers?.name||"-"} (${x.workers?.worker_id||"-"})</p><p><b>Date:</b> ${x.attendance_date}<br><b>Time In:</b> ${x.check_in_at?new Date(x.check_in_at).toLocaleString():"-"}<br><b>Time Out:</b> ${x.check_out_at?new Date(x.check_out_at).toLocaleString():"Not yet"}<br><b>Total Hours:</b> ${hours}<br><b>Extra Hours:</b> ${getOvertimeHours(x).toFixed(2)}<br><b>Status:</b> ${x.status}<br><b>Verification:</b> ${x.verification_status||"pending"}</p>${inPhoto}${outPhoto}`;$("attModal").classList.remove("hidden");}
+function closeAttModal(){$("attModal").classList.add("hidden")}
+function exportAttendanceCSV(){const rows=adminAttendance.map(x=>{const hrs=(x.check_in_at&&x.check_out_at)?((new Date(x.check_out_at)-new Date(x.check_in_at))/3600000).toFixed(2):"";return [x.workers?.worker_id||"",x.workers?.name||"",x.attendance_date,x.check_in_at||"",x.check_out_at||"",hrs,x.status,x.verification_status||""];});const csv=[['Worker ID','Worker','Date','Time In','Time Out','Hours','Status','Verification'],...rows].map(r=>r.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='rao-attendance.csv';a.click();URL.revokeObjectURL(a.href)}
+function markAttendanceStatus(id,status){return verify(id,status)}
+let monthlyReportData=[];
+async function loadMonthlyReport(){
+ if(role!=="admin")return;
+ const month=$("reportMonth")?.value||monthKey(),schedule=$("reportSchedule")?.value||"mon-sat";
+ localStorage.setItem("raoWorkSchedule",schedule);
+ const [yy,mm]=month.split("-").map(Number),start=`${yy}-${String(mm).padStart(2,"0")}-01`,end=new Date(yy,mm,0).toISOString().slice(0,10);
+ const {data:w,error:we}=await db.from("workers").select("id,worker_id,name,daily_wage").eq("active",true).order("worker_id");
+ const {data:a,error:ae}=await db.from("attendance").select("worker_id,attendance_date,status,check_in_at,check_out_at").gte("attendance_date",start).lte("attendance_date",end);
+ if(we||ae)return notice("reportMsg",(we||ae)?.message||"Unable to load monthly report.");
+ const expected=scheduledDays(start,end,schedule);monthlyReportData=[];
+ $("monthlyRows").innerHTML=(w||[]).map(x=>{
+  const mine=(a||[]).filter(v=>v.worker_id===x.id),attended=mine.filter(isAttendanceDayRecord),present=mine.filter(v=>v.status==="present"),leave=mine.filter(v=>v.status==="leave").length;
+  const late=attended.filter(v=>getTiming(v.check_in_at)==="Late").length;
+  const hours=attended.reduce((s,v)=>s+getRecordHours(v),0);
+  const overtime=attended.reduce((s,v)=>s+getOvertimeHours(v),0);
+  const absent=Math.max(0,expected-attended.length-leave);
+  monthlyReportData.push({worker_id:x.worker_id,worker:x.name,present:present.length,late,absent,leave,hours:hours.toFixed(2),overtime:overtime.toFixed(2),month,schedule});
+  return `<tr><td><b>${x.name}</b><br><span class="small">${x.worker_id}</span></td><td>${present.length}</td><td>${late}</td><td>${absent}</td><td>${leave}</td><td>${hours.toFixed(2)}</td><td>${overtime.toFixed(2)}</td></tr>`;
+ }).join("")||`<tr><td colspan="7">No active workers.</td></tr>`;
+ notice("reportMsg",`Report generated for ${month}. Expected workdays: ${expected} (${schedule}).`);
+}
+function exportMonthlyReportCSV(){
+ if(!monthlyReportData.length)return notice("reportMsg","Generate the monthly report first.");
+ const rows=monthlyReportData.map(x=>[x.worker_id,x.worker,x.month,x.schedule,x.present,x.late,x.absent,x.leave,x.hours,x.overtime]);
+ const csv=[["Worker ID","Worker","Month","Schedule","Present","Late","Absent","Leave","Total Hours","Extra Hours"],...rows].map(r=>r.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(",")).join("\\n");
+ const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download=`rao-monthly-attendance-${$("reportMonth")?.value||monthKey()}.csv`;a.click();URL.revokeObjectURL(a.href);
+}
+function setSalaryMonth(){const d=new Date();const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0');const first=`${y}-${m}-01`;const last=new Date(y,d.getMonth()+1,0).toISOString().slice(0,10);if($('salaryStart'))$('salaryStart').value=first;if($('salaryEnd'))$('salaryEnd').value=last;}
+async function loadSalary(){
+ if(role!=="admin")return;
+ const start=$('salaryStart').value,end=$('salaryEnd').value;
+ if(!start||!end||start>end)return notice('salaryMsg','Please select a valid salary period.');
+ const {data:w,error:we}=await db.from('workers').select('*').eq('active',true).order('worker_id');
+ const {data:a,error:ae}=await db.from('attendance').select('worker_id,attendance_date,status,check_in_at,check_out_at').gte('attendance_date',start).lte('attendance_date',end);
+ const {data:p,error:pe}=await db.from('salary_payments').select('worker_id,amount,status,paid_at,notes,period_start,period_end').gte('period_start',start).lte('period_end',end);
+ if(we||ae||pe)return notice('salaryMsg',(we||ae||pe).message||'Unable to load salary data.');
+ const payments=p||[],schedule=localStorage.getItem("raoWorkSchedule")||"mon-sat";
+ $('salaryRows').innerHTML=(w||[]).map(x=>{
+  const mine=(a||[]).filter(v=>v.worker_id===x.id),attended=mine.filter(isAttendanceDayRecord),present=mine.filter(v=>v.status==='present').length;
+  const late=attended.filter(v=>getTiming(v.check_in_at)==='Late').length;
+  const leave=mine.filter(v=>v.status==='leave').length;
+  const expected=scheduledDays(start,end,schedule),absent=Math.max(0,expected-attended.length-leave);
+  const totalHours=attended.reduce((s,v)=>s+getRecordHours(v),0),overtime=attended.reduce((s,v)=>s+getOvertimeHours(v),0);
+  const gross=present*Number(x.daily_wage||0);
+  const paid=payments.filter(v=>v.worker_id===x.id).reduce((sum,v)=>sum+Number(v.amount||0),0),bal=gross-paid;
+  return `<tr><td><b>${x.name}</b><br><span class="small">${x.worker_id}</span></td><td>RM ${Number(x.daily_wage).toFixed(2)}</td><td>${present}</td><td>${late}</td><td>${absent}</td><td>${totalHours.toFixed(2)} h</td><td>${overtime.toFixed(2)} h</td><td>RM ${gross.toFixed(2)}</td><td>RM ${paid.toFixed(2)}</td><td><b>RM ${bal.toFixed(2)}</b></td><td><div class="actions"><input id="pay_${x.id}" type="number" min="0" step="0.01" placeholder="RM" style="max-width:110px;margin:0"><button class="primary" onclick="recordPayment('${x.id}')">Pay</button></div></td></tr>`;
+ }).join('')||`<tr><td colspan="11">No active workers.</td></tr>`;
+ notice('salaryMsg',`Salary calculated for ${start} to ${end}. Approved Present days are paid automatically; Late days remain paid as Present. Late days are still paid as Present. Extra hours are recorded separately and are not added to salary unless you decide an overtime rate later. Absence means no attendance record for that scheduled day.`);
+}
+async function recordPayment(workerId){
+ const amount=Number($('pay_'+workerId)?.value||0),start=$('salaryStart').value,end=$('salaryEnd').value;
+ if(!amount||amount<=0)return notice('salaryMsg','Enter a valid payment amount.');
+ const {data:{user}}=await db.auth.getUser();
+ const {error}=await db.from('salary_payments').insert({worker_id:workerId,period_start:start,period_end:end,amount,status:'paid',paid_at:new Date().toISOString(),notes:'Recorded by Admin'});
+ if(error)return notice('salaryMsg','Payment failed: '+error.message);
+ notice('salaryMsg','Payment recorded successfully.'); loadSalary();
+}
+async function verify(id,status){const {data:{user}}=await db.auth.getUser();const note=status==="present"?"Approved by Admin":"Rejected by Admin";const {error}=await db.from("attendance").update({status,verification_status:status==="present"?"verified":"rejected",verified_by:user.id,verified_at:new Date().toISOString(),verification_note:note}).eq("id",id);if(error)alert(error.message);else loadAdmin()}
+async function addWorker(){
+ const worker_id=$("newId").value.trim().toUpperCase(),name=$("newName").value.trim(),daily_wage=Number($("newWage").value),phone=$("newPhone").value.trim(),site=$("newSite").value.trim();
+ if(!worker_id||!name||!daily_wage)return notice("workerMsg","Worker ID, name and wage are required.");
+ const {error}=await db.from("workers").insert({worker_id,name,daily_wage,phone,site});
+ if(error)return notice("workerMsg",error.message);notice("workerMsg","Worker added successfully.");loadAdmin();
+}
+async function startCam(){
+ try{
+  if(!navigator.mediaDevices?.getUserMedia)throw new Error("Camera is not supported by this browser.");
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+  stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:720},height:{ideal:540}},audio:false});
+  $("cam").srcObject=stream;
+  $("captureBtn").disabled=false;
+  notice("attMsg","Camera ready. Look at the camera and tap Capture Selfie.");
+ }catch(e){notice("attMsg","Camera permission is required. Please allow camera access and try again.");}
+}
+async function sendAttendance(){
+ if(!workerToken)return notice("attMsg","This page is not linked to a worker.");
+ if(!selfieData)return notice("attMsg",workerMode==="out"?"Please capture a fresh Time Out selfie first.":"Please capture a fresh Time In selfie first.");
+ if(workerMode==="out"){
+ const ok=confirm("Confirm Time Out?\n\nYour current selfie will be submitted as your Time Out record.");
+ if(!ok)return;
+}
+const btn=$("submitBtn");btn.disabled=true;btn.textContent=workerMode==="out"?"Recording Time Out…":"Recording Time In…";
+ try{
+  const fn=workerMode==="out"?"submit_worker_checkout_by_token":"submit_worker_attendance_by_token";
+  const {data,error}=await db.rpc(fn,{p_token:workerToken,p_latitude:null,p_longitude:null,p_selfie:selfieData});
+  if(error)return notice("attMsg",(workerMode==="out"?"Time Out failed: ":"Time In failed: ")+error.message);
+  notice("attMsg",data?.message||(workerMode==="out"?"Time Out recorded successfully.":"Time In recorded. Waiting for Admin verification."));$("attMsg").classList.add("success");
+  if(data?.ok){if(workerMode==="in")setWorkerMode("out");else if(workerMode==="out")setWorkerMode("done");}
+ }catch(e){notice("attMsg",(workerMode==="out"?"Time Out failed: ":"Time In failed: ")+(e?.message||String(e)));}
+ finally{if(workerMode!=="done")btn.disabled=false;}
+}
+async function refreshWorkerToday(){if(!workerToken)return;const {data,error}=await db.rpc("get_worker_attendance_by_token",{p_token:workerToken});if(error)return notice("attMsg","Unable to load today's attendance: "+error.message);const today=new Date().toISOString().slice(0,10);workerToday=(data||[]).find(x=>x.attendance_date===today)||null;if(!workerToday){setWorkerMode("in");return;}if(workerToday.check_out_at){setWorkerMode("done");}else{setWorkerMode("out");}}
+function setWorkerMode(mode){workerMode=mode;selfieData=null;$("selfie").classList.add("hidden");if(mode==="in"){ $("workStep1").textContent="Time In: Take a fresh selfie";$("workStep2").textContent="Submit with server time";$("workStep3").textContent="Submit — start work";$("submitBtn").textContent="🟢 Time In / Start Work";$("submitBtn").disabled=false;}else if(mode==="out"){ $("workStep1").textContent="Time Out: Take a fresh selfie again";$("workStep2").textContent="Submit with server time again";$("workStep3").textContent="Submit — finish work";$("submitBtn").textContent="🔴 Time Out / Finish Work";$("submitBtn").disabled=false;notice("attMsg","Time In is recorded. When work is finished, take a fresh selfie and press Time Out.");}else{$("workStep1").textContent="Today's Time In and Time Out are complete";$("workStep2").textContent="Attendance has been recorded";$("workStep3").textContent="You can view today's record in My History";$("submitBtn").textContent="✅ Completed for Today";$("submitBtn").disabled=true;}}
+async function loadMine(){if(!workerToken)return;const {data,error}=await db.rpc("get_worker_attendance_by_token",{p_token:workerToken});if(error){return notice("attMsg",error.message)}$("myRows").innerHTML=(data||[]).map(x=>{const hrs=(x.check_in_at&&x.check_out_at)?((new Date(x.check_out_at)-new Date(x.check_in_at))/3600000).toFixed(2):"—";return `<tr><td>${x.attendance_date}</td><td>${x.check_in_at?new Date(x.check_in_at).toLocaleTimeString():"-"}</td><td>${x.check_out_at?new Date(x.check_out_at).toLocaleTimeString():"—"}</td><td>${hrs}</td><td><span class="badge">${x.check_out_at?"Completed":x.status}</span></td></tr>`}).join("")||'<tr><td colspan="5">No attendance records yet.</td></tr>'}
+
+(async()=>{try{if(await loadWorkerLink())return;if(!ensureDb())return; const {data:{session},error}=await db.auth.getSession();if(error)diag("Session check error: "+error.message);else if(session){diag("Existing session found. Checking access…");await boot(session.user)}}catch(e){diag("Startup error: "+(e?.message||String(e)))}})();
+</script>
+<script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));}</script>
+</body></html>
